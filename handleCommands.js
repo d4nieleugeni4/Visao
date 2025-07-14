@@ -1,3 +1,4 @@
+const pingCommand = require("./comandos/membro/ping.js");
 
 module.exports.handleCommands = (sock) => {
   sock.ev.on("messages.upsert", async (msg) => {
@@ -8,8 +9,8 @@ module.exports.handleCommands = (sock) => {
     const messageType = Object.keys(m.message)[0];
     const text = m.message.conversation || m.message[messageType]?.text || "";
 
-    if (text.startsWith(".ping")) {
-      await sock.sendMessage(from, { text: "pong!" });
+    if (text.startsWith(`.${pingCommand.name}`)) {
+      await pingCommand.execute(sock, from);
     }
   });
 };
