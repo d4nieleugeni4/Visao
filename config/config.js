@@ -23,7 +23,8 @@ module.exports = {
   // Mensagens padrão
   messages: {
     welcome: "Olá! Bem-vindo ao bot! 🤖",
-    error: "❌ Ocorreu um erro!",
-    ownerOnly: "⚠️ Este comando é apenas para o dono!"
+    defaultTagMessage: "📢 Mensagem importante!",
+    ownerOnly: "⚠️ Apenas administradores podem usar este comando!",
+    error: "❌ Ocorreu um erro ao executar o comando!"
   }
 };
