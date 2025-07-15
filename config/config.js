@@ -5,15 +5,8 @@ module.exports = {
     version: "1.0.0",
     emoji: "🤖",
     prefix: ".",
-    imagePath: "./assets/images/bot-profile.jpg" // Caminho para a imagem de perfil
-
-    reactions: {
-    success: "✅", // Emoji de confirmação
-    error: "❌",   // Emoji de erro
-    warning: "⚠️"  // Emoji de aviso
-  }
+    imagePath: "./assets/images/bot-profile.jpg"
   },
- 
 
   // Números importantes
   numbers: {
@@ -30,8 +23,15 @@ module.exports = {
   // Mensagens padrão
   messages: {
     welcome: "Olá! Bem-vindo ao bot! 🤖",
-    defaultTagMessage: "📢 Mensagem importante!",
-    ownerOnly: "⚠️ Apenas administradores podem usar este comando!",
-    error: "❌ Ocorreu um erro ao executar o comando!"
+    error: "❌ Ocorreu um erro!",
+    ownerOnly: "⚠️ Este comando é apenas para o dono!",
+    defaultTagMessage: "📢 Mensagem importante!"
+  },
+
+  // Reações de emoji
+  reactions: {
+    success: "✅",
+    error: "❌",
+    warning: "⚠️"
   }
 };
