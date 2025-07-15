@@ -6,6 +6,19 @@ module.exports = {
   description: "Marca todos ocultamente (apenas admins)",
   category: "admin",
   async execute(sock, from, msg, args) {
+    const sendReaction = async (reaction) => {
+      try {
+        await sock.sendMessage(from, {
+          react: {
+            text: reaction,
+            key: msg.key
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao enviar reação:", e);
+      }
+    };
+
     try {
       // Verifica se é um grupo
       if (!from.endsWith('@g.us')) {
@@ -13,20 +26,20 @@ module.exports = {
           text: "⚠️ Este comando só funciona em grupos!",
           mentions: [msg.key.participant || msg.key.remoteJid]
         });
-        await this.sendReaction(sock, from, msg, config.reactions.error);
+        await sendReaction(config.reactions.error);
         return;
       }
 
       const groupMetadata = await sock.groupMetadata(from);
       const participant = msg.key.participant || msg.key.remoteJid;
 
-      // Verifica permissão usando o utils
+      // Verifica permissão
       if (!isAdminOrOwner(groupMetadata, participant)) {
         await sock.sendMessage(from, { 
           text: "🚫 Apenas administradores podem usar este comando!",
           mentions: [participant]
         });
-        await this.sendReaction(sock, from, msg, config.reactions.error);
+        await sendReaction(config.reactions.error);
         return;
       }
 
@@ -38,12 +51,12 @@ module.exports = {
         mentions: participants,
         ephemeralMessage: {
           parameters: {
-            expireAfter: 86400 // 24 horas
+            expireAfter: 86400
           }
         }
       });
 
-      await this.sendReaction(sock, from, msg, config.reactions.success);
+      await sendReaction(config.reactions.success);
 
     } catch (error) {
       console.error("Erro no hidetag:", error);
@@ -51,21 +64,7 @@ module.exports = {
         text: "❌ Ocorreu um erro ao executar o comando",
         mentions: [msg.key.participant || msg.key.remoteJid]
       });
-      await this.sendReaction(sock, from, msg, config.reactions.error);
-    }
-  },
-
-  // Helper para enviar reações
-  async sendReaction(sock, from, msg, reaction) {
-    try {
-      await sock.sendMessage(from, {
-        react: {
-          text: reaction,
-          key: msg.key
-        }
-      });
-    } catch (e) {
-      console.error("Erro ao enviar reação:", e);
+      await sendReaction(config.reactions.error);
     }
   }
 };
