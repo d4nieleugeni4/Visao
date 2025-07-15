@@ -1,7 +1,7 @@
 module.exports = {
   // Informações básicas do bot
   bot: {
-    name: "MeuBot",
+    name: "VISAO",
     version: "1.0.0",
     emoji: "🤖",
     prefix: ".",
@@ -10,7 +10,7 @@ module.exports = {
 
   // Números importantes
   numbers: {
-    owner: "5511999999999", // Número do dono com DDI e DDD
+    owner: "5524981321901", // Número do dono com DDI e DDD
     bot: "5511888888888"    // Número do bot com DDI e DDD
   },
 
