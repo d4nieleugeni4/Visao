@@ -25,12 +25,16 @@ module.exports.handleCommands = (sock) => {
       }
     } catch (error) {
       console.error("Erro no handler:", error);
-      await sock.sendMessage(from, {
-        react: {
-          text: config.reactions.error,
-          key: m.key
-        }
-      });
+      try {
+        await sock.sendMessage(from, {
+          react: {
+            text: config.reactions.error,
+            key: m.key
+          }
+        });
+      } catch (e) {
+        console.error("Erro ao enviar reação:", e);
+      }
     }
   });
 };
