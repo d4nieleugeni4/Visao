@@ -1,5 +1,5 @@
 const pingCommand = require("./comandos/membro/ping.js");
-const config = require("/config/config");
+const config = require('./config/config'); 
 
 module.exports.handleCommands = (sock) => {
   sock.ev.on("messages.upsert", async (msg) => {
