@@ -9,7 +9,7 @@ const readline = require("readline");
 const pino = require("pino");
 const { handleCommands } = require("./handleCommands");
 const { participantsUpdate } = require("./participantsUpdate");
-const config = require("/config/config");
+const config = require('./config/config'); // Caminho corrigido
 
 const question = (string) => {
   const rl = readline.createInterface({ 
