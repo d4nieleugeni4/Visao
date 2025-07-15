@@ -3,7 +3,7 @@ const config = require('../../config/config');
 module.exports = {
   name: "hidetag",
   description: "Marca todos ocultamente",
-  aliases: ["tag"], // Permite usar tanto .hidetag quanto .tag
+  aliases: ["tag"],
   adminOnly: true,
   async execute(sock, from, msg, args) {
     try {
@@ -13,21 +13,31 @@ module.exports = {
 
       // Verifica se é administrador
       const isAdmin = groupMetadata.participants.find(
-        p => p.id === msg.key.participant || p.id === msg.key.remoteJid
+        p => p.id === (msg.key.participant || msg.key.remoteJid)
       )?.admin === "admin";
 
       if (!isAdmin) {
-        return sock.sendMessage(from, { text: config.messages.ownerOnly });
+        await sock.sendMessage(from, { 
+          text: config.messages.ownerOnly 
+        });
+        
+        // Reação de aviso para não-admin
+        await sock.sendMessage(from, {
+          react: {
+            text: config.reactions.warning,
+            key: msg.key
+          }
+        });
+        return;
       }
 
-      // Envia a marcação oculta ou visível
       if (msg.message.conversation.startsWith(`${config.bot.prefix}hidetag`)) {
         await sock.sendMessage(from, {
           text: message,
           mentions: participants,
           ephemeralMessage: {
             parameters: {
-              expireAfter: 86400 // 24 horas
+              expireAfter: 86400
             }
           }
         });
@@ -37,9 +47,26 @@ module.exports = {
           mentions: participants
         });
       }
+
+      // Reação de sucesso
+      await sock.sendMessage(from, {
+        react: {
+          text: config.reactions.success,
+          key: msg.key
+        }
+      });
+      
     } catch (error) {
       console.error(error);
       await sock.sendMessage(from, { text: config.messages.error });
+      
+      // Reação de erro
+      await sock.sendMessage(from, {
+        react: {
+          text: config.reactions.error,
+          key: msg.key
+        }
+      });
     }
   }
 };
