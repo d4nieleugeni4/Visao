@@ -17,17 +17,14 @@ module.exports.handleCommands = (sock) => {
     const command = args.shift().toLowerCase();
 
     try {
-      // Comando ping
       if (command === pingCommand.name) {
         await pingCommand.execute(sock, from, m);
       } 
-      // Comando hidetag
       else if (command === hidetagCommand.name) {
         await hidetagCommand.execute(sock, from, m, args);
       }
     } catch (error) {
       console.error("Erro no handler:", error);
-      // Reação de erro genérico
       await sock.sendMessage(from, {
         react: {
           text: config.reactions.error,
