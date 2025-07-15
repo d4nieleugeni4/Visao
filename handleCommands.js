@@ -21,5 +21,13 @@ module.exports.handleCommands = (sock) => {
     else if (command === hidetagCommand.name || command === 'tag') {
       await hidetagCommand.execute(sock, from, m, args);
     }
+
+    if (command === pingCommand.name) {
+      await pingCommand.execute(sock, from, m); // Passa o objeto da mensagem
+    } 
+    else if (command === hidetagCommand.name || command === 'tag') {
+       await hidetagCommand.execute(sock, from, m, args);
+   }
+    
   });
 };
