@@ -10,24 +10,28 @@ module.exports.handleCommands = (sock) => {
     const from = m.key.remoteJid;
     const messageType = Object.keys(m.message)[0];
     const text = m.message.conversation || m.message[messageType]?.text || "";
+    
+    if (!text.startsWith(config.bot.prefix)) return;
+
     const args = text.slice(config.bot.prefix.length).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
-    // Comandos normais
-    if (command === pingCommand.name) {
-      await pingCommand.execute(sock, from);
-    } 
-    // Comandos de admin
-    else if (command === hidetagCommand.name || command === 'tag') {
-      await hidetagCommand.execute(sock, from, m, args);
+    try {
+      if (command === pingCommand.name) {
+        await pingCommand.execute(sock, from, m);
+      } 
+      else if (command === hidetagCommand.name || command === 'tag') {
+        await hidetagCommand.execute(sock, from, m, args);
+      }
+    } catch (error) {
+      console.error("Erro ao executar comando:", error);
+      // Reação de erro genérico
+      await sock.sendMessage(from, {
+        react: {
+          text: config.reactions.error,
+          key: m.key
+        }
+      });
     }
-
-    if (command === pingCommand.name) {
-      await pingCommand.execute(sock, from, m); // Passa o objeto da mensagem
-    } 
-    else if (command === hidetagCommand.name || command === 'tag') {
-       await hidetagCommand.execute(sock, from, m, args);
-   }
-    
   });
 };
