@@ -6,7 +6,14 @@ module.exports = {
     emoji: "🤖",
     prefix: ".",
     imagePath: "./assets/images/bot-profile.jpg" // Caminho para a imagem de perfil
+
+    reactions: {
+    success: "✅", // Emoji de confirmação
+    error: "❌",   // Emoji de erro
+    warning: "⚠️"  // Emoji de aviso
+  }
   },
+ 
 
   // Números importantes
   numbers: {
