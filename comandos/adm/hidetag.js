@@ -33,11 +33,16 @@ module.exports = {
       const messageType = Object.keys(msg.message)[0];
       const text = msg.message.conversation || msg.message[messageType]?.text || "";
       const args = text.split(' ').slice(1);
-      const message = args.join(' ') || '🔔';
+      const customMessage = args.join(' ');
+      
+      // Monta a mensagem final com emoji de notificação
+      const finalMessage = customMessage 
+        ? `${config.hidetag.notificationEmoji} ${customMessage}`
+        : config.hidetag.defaultMessage;
 
       // Envia a marcação
       await sock.sendMessage(from, {
-        text: message,
+        text: finalMessage,
         mentions: members,
         ephemeralMessage: {
           parameters: {
@@ -46,10 +51,10 @@ module.exports = {
         }
       });
 
-      // Confirmação
+      // Adiciona reação de destaque à mensagem original do comando
       await sock.sendMessage(from, {
         react: {
-          text: "✅",
+          text: config.hidetag.reactionEmoji,
           key: msg.key
         }
       });
@@ -59,6 +64,14 @@ module.exports = {
       await sock.sendMessage(from, { 
         text: "❌ Erro ao marcar membros!",
         mentions: [msg.key.participant || msg.key.remoteJid]
+      });
+      
+      // Reação de erro
+      await sock.sendMessage(from, {
+        react: {
+          text: config.reactions.error,
+          key: msg.key
+        }
       });
     }
   }
