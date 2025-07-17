@@ -1,40 +1,87 @@
-const pingCommand = require('./comandos/membro/ping');
-const hidetagCommand = require('./comandos/adm/hidetag');
+const path = require('path');
+const { default: makeWASocket } = require('@whiskeysockets/baileys');
+const pino = require('pino');
 const config = require('./config/config');
 
+// Importação dos comandos
+const pingCommand = require('./comandos/membro/ping');
+const hidetagCommand = require('./comandos/adm/hidetag');
+
 module.exports.handleCommands = (sock) => {
-  sock.ev.on("messages.upsert", async (msg) => {
-    const m = msg.messages[0];
-    if (!m?.message || m.key.fromMe) return;
-
-    const from = m.key.remoteJid;
-    const messageType = Object.keys(m.message)[0];
-    const text = m.message.conversation || m.message[messageType]?.text || "";
-    
-    if (!text.startsWith(config.bot.prefix)) return;
-
-    const args = text.slice(config.bot.prefix.length).trim().split(/ +/);
-    const command = args.shift().toLowerCase();
-
+  sock.ev.on("messages.upsert", async ({ messages }) => {
     try {
-      if (command === pingCommand.name) {
-        await pingCommand.execute(sock, from, m);
-      } 
-      else if (command === hidetagCommand.name) {
-        await hidetagCommand.execute(sock, from, m, args);
+      const m = messages[0];
+      if (!m?.message || m.key.fromMe) return;
+
+      const from = m.key.remoteJid;
+      const messageType = Object.keys(m.message)[0];
+      const text = m.message.conversation || m.message[messageType]?.text || "";
+      
+      // Verifica se é um comando
+      if (!text.startsWith(config.bot.prefix)) return;
+
+      // Extrai comando e argumentos
+      const args = text.slice(config.bot.prefix.length).trim().split(/ +/);
+      const command = args.shift().toLowerCase();
+
+      // Executa os comandos
+      switch (command) {
+        case pingCommand.name:
+          await pingCommand.execute(sock, from, m);
+          break;
+          
+        case hidetagCommand.name:
+          await hidetagCommand.execute(sock, m, from);
+          break;
+          
+        default:
+          // Comando não reconhecido
+          await sock.sendMessage(from, {
+            text: `❌ Comando desconhecido. Use ${config.bot.prefix}help para ver os comandos.`
+          });
       }
+
     } catch (error) {
-      console.error("Erro no handler:", error);
+      console.error('Erro no handler de comandos:', error);
+      
+      // Tenta enviar reação de erro
       try {
-        await sock.sendMessage(from, {
+        await sock.sendMessage(m.key.remoteJid, {
           react: {
             text: config.reactions.error,
             key: m.key
           }
         });
-      } catch (e) {
-        console.error("Erro ao enviar reação:", e);
+      } catch (reactError) {
+        console.error('Erro ao enviar reação:', reactError);
       }
     }
   });
+
+  // Outros event handlers podem ser adicionados aqui
+  sock.ev.on("connection.update", (update) => {
+    const { connection } = update;
+    if (connection === "open") {
+      console.log(`✅ ${config.bot.name} conectado!`);
+    }
+  });
 };
+
+// Inicialização do socket (opcional, pode estar em outro arquivo)
+async function init() {
+  const { state, saveCreds } = await useMultiFileAuthState(
+    path.resolve(__dirname, 'auth')
+  );
+
+  const sock = makeWASocket({
+    printQRInTerminal: true,
+    auth: state,
+    logger: pino({ level: 'silent' }),
+    browser: config.whatsapp.browser
+  });
+
+  sock.ev.on("creds.update", saveCreds);
+  module.exports.handleCommands(sock);
+}
+
+// init(); // Descomente se quiser iniciar aqui
