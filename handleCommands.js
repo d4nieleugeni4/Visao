@@ -1,11 +1,9 @@
-const path = require('path');
-const { default: makeWASocket } = require('@whiskeysockets/baileys');
-const pino = require('pino');
 const config = require('./config/config');
 
-// Importação dos comandos
+// Import all commands
 const pingCommand = require('./comandos/membro/ping');
 const hidetagCommand = require('./comandos/adm/hidetag');
+const onlyadmsCommand = require('./comandos/adm/onlyadms');
 
 module.exports.handleCommands = (sock) => {
   sock.ev.on("messages.upsert", async ({ messages }) => {
@@ -17,14 +15,14 @@ module.exports.handleCommands = (sock) => {
       const messageType = Object.keys(m.message)[0];
       const text = m.message.conversation || m.message[messageType]?.text || "";
       
-      // Verifica se é um comando
+      // Check if it's a command
       if (!text.startsWith(config.bot.prefix)) return;
 
-      // Extrai comando e argumentos
+      // Extract command and arguments
       const args = text.slice(config.bot.prefix.length).trim().split(/ +/);
       const command = args.shift().toLowerCase();
 
-      // Executa os comandos
+      // Execute commands
       switch (command) {
         case pingCommand.name:
           await pingCommand.execute(sock, from, m);
@@ -34,8 +32,12 @@ module.exports.handleCommands = (sock) => {
           await hidetagCommand.execute(sock, m, from);
           break;
           
+        case onlyadmsCommand.name:
+          await onlyadmsCommand.execute(sock, m, from, args);
+          break;
+          
         default:
-          // Comando não reconhecido
+          // Unknown command
           await sock.sendMessage(from, {
             text: `❌ Comando desconhecido. Use ${config.bot.prefix}help para ver os comandos.`
           });
@@ -44,7 +46,7 @@ module.exports.handleCommands = (sock) => {
     } catch (error) {
       console.error('Erro no handler de comandos:', error);
       
-      // Tenta enviar reação de erro
+      // Try to send error reaction
       try {
         await sock.sendMessage(m.key.remoteJid, {
           react: {
@@ -58,17 +60,27 @@ module.exports.handleCommands = (sock) => {
     }
   });
 
-  // Outros event handlers podem ser adicionados aqui
+  // Connection events
   sock.ev.on("connection.update", (update) => {
-    const { connection } = update;
+    const { connection, lastDisconnect } = update;
+    
     if (connection === "open") {
       console.log(`✅ ${config.bot.name} conectado!`);
     }
+    
+    if (connection === "close") {
+      const shouldReconnect = lastDisconnect.error?.output?.statusCode !== 401; // Don't reconnect if logged out
+      console.log(`Conexão fechada. ${shouldReconnect ? 'Reconectando...' : 'Encerrando.'}`);
+      if (shouldReconnect) setTimeout(() => this.connect(), 5000);
+    }
   });
+
+  // Credentials update
+  sock.ev.on("creds.update", saveCreds);
 };
 
-// Inicialização do socket (opcional, pode estar em outro arquivo)
-async function init() {
+// Helper function for initialization
+async function initWhatsApp() {
   const { state, saveCreds } = await useMultiFileAuthState(
     path.resolve(__dirname, 'auth')
   );
@@ -77,11 +89,16 @@ async function init() {
     printQRInTerminal: true,
     auth: state,
     logger: pino({ level: 'silent' }),
-    browser: config.whatsapp.browser
+    browser: config.whatsapp.browser,
+    markOnlineOnConnect: true,
+    getMessage: async (key) => {
+      return {
+        conversation: `${config.bot.name} ${config.bot.version}`
+      };
+    }
   });
 
   sock.ev.on("creds.update", saveCreds);
   module.exports.handleCommands(sock);
+  return sock;
 }
-
-// init(); // Descomente se quiser iniciar aqui
