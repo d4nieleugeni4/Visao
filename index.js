@@ -9,7 +9,7 @@ const readline = require("readline");
 const pino = require("pino");
 const { handleCommands } = require("./handleCommands");
 const { participantsUpdate } = require("./participantsUpdate");
-const config = require('./config/config'); // Caminho corrigido
+const config = require('./config/config');
 
 const question = (string) => {
   const rl = readline.createInterface({ 
@@ -32,7 +32,6 @@ exports.connect = async () => {
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
-    printQRInTerminal: true,
     version,
     logger: pino({ level: "silent" }),
     auth: state,
@@ -42,6 +41,14 @@ exports.connect = async () => {
       return {
         conversation: `${config.bot.name} ${config.bot.version}`
       };
+    }
+  });
+
+  // Handler para QR Code manual
+  sock.ev.on('connection.update', ({ qr }) => {
+    if (qr) {
+      console.log('Escaneie o QR Code abaixo ou use o pairing code:');
+      // Você pode implementar seu próprio display do QR aqui
     }
   });
 
@@ -67,7 +74,7 @@ exports.connect = async () => {
       
       if (shouldReconnect) {
         console.log("⚡ Tentando reconectar...");
-        setTimeout(() => this.connect(), 5000);
+        setTimeout(() => exports.connect(), 5000); // Corrigido para exports.connect
       }
     } else if (connection === "open") {
       console.log(`✅ ${config.bot.name} conectado com sucesso!`);
@@ -78,12 +85,14 @@ exports.connect = async () => {
 
   sock.ev.on("creds.update", saveCreds);
 
-  handleCommands(sock);
+  // Passa o sock e saveCreds para o handleCommands
+  handleCommands(sock, saveCreds);
   participantsUpdate(sock);
   return sock;
 };
 
-this.connect().catch(err => {
+// Inicia o bot
+exports.connect().catch(err => {
   console.error("❌ Erro ao iniciar o bot:", err);
   process.exit(1);
 });
