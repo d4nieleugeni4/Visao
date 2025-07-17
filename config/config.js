@@ -33,5 +33,11 @@ module.exports = {
     success: "✅",
     error: "❌",
     warning: "⚠️"
+  },
+
+  hidetag: {
+    defaultMessage: "🔔", // Mensagem padrão quando não for especificada
+    notificationEmoji: "📢", // Emoji que será adicionado à mensagem
+    reactionEmoji: "📣" // Emoji que reagirá à mensagem do comando
   }
 };
