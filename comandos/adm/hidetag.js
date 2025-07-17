@@ -1,70 +1,65 @@
+const { isGroupAdmin } = require('../../utils/permissions');
 const config = require('../../config/config');
-const { isAdminOrOwner } = require('../../utils/permissions');
 
 module.exports = {
   name: "hidetag",
-  description: "Marca todos ocultamente (apenas admins)",
+  description: "Marca todos os membros do grupo (apenas admins)",
   category: "admin",
-  async execute(sock, from, msg, args) {
-    const sendReaction = async (reaction) => {
-      try {
-        await sock.sendMessage(from, {
-          react: {
-            text: reaction,
-            key: msg.key
-          }
-        });
-      } catch (e) {
-        console.error("Erro ao enviar reação:", e);
-      }
-    };
-
+  async execute(sock, msg, from) {
     try {
-      // Verifica se é um grupo
+      // Verifica se é grupo
       if (!from.endsWith('@g.us')) {
         await sock.sendMessage(from, { 
-          text: "⚠️ Este comando só funciona em grupos!",
+          text: "🚫 Este comando só funciona em grupos!",
           mentions: [msg.key.participant || msg.key.remoteJid]
         });
-        await sendReaction(config.reactions.error);
         return;
       }
-
-      const groupMetadata = await sock.groupMetadata(from);
-      const participant = msg.key.participant || msg.key.remoteJid;
 
       // Verifica permissão
-      if (!isAdminOrOwner(groupMetadata, participant)) {
+      const isAdmin = await isGroupAdmin(sock, msg);
+      if (!isAdmin) {
         await sock.sendMessage(from, { 
-          text: "🚫 Apenas administradores podem usar este comando!",
-          mentions: [participant]
+          text: "❌ Apenas administradores podem usar este comando!",
+          mentions: [msg.key.participant || msg.key.remoteJid]
         });
-        await sendReaction(config.reactions.error);
         return;
       }
 
-      const participants = groupMetadata.participants.map(p => p.id);
-      const message = args.join(" ") || config.messages.defaultTagMessage;
+      // Obtém membros e mensagem
+      const groupMetadata = await sock.groupMetadata(from);
+      const members = groupMetadata.participants.map(p => p.id);
+      
+      const messageType = Object.keys(msg.message)[0];
+      const text = msg.message.conversation || msg.message[messageType]?.text || "";
+      const args = text.split(' ').slice(1);
+      const message = args.join(' ') || '🔔';
 
+      // Envia a marcação
       await sock.sendMessage(from, {
         text: message,
-        mentions: participants,
+        mentions: members,
         ephemeralMessage: {
           parameters: {
-            expireAfter: 86400
+            expireAfter: 86400 // 24 horas
           }
         }
       });
 
-      await sendReaction(config.reactions.success);
+      // Confirmação
+      await sock.sendMessage(from, {
+        react: {
+          text: "✅",
+          key: msg.key
+        }
+      });
 
     } catch (error) {
-      console.error("Erro no hidetag:", error);
+      console.error('Erro no hidetag:', error);
       await sock.sendMessage(from, { 
-        text: "❌ Ocorreu um erro ao executar o comando",
+        text: "❌ Erro ao marcar membros!",
         mentions: [msg.key.participant || msg.key.remoteJid]
       });
-      await sendReaction(config.reactions.error);
     }
   }
 };
