@@ -2,10 +2,11 @@ const { isGroupAdmin } = require('../../utils/permissions');
 const config = require('../../config/config');
 
 module.exports = {
-  name: "onlyadm",
-  description: "Restringe o grupo para apenas administradores enviarem mensagens",
+  name: "onlyadms",
+  description: "Ativa/desativa o modo apenas administradores",
   category: "admin",
-  async execute(sock, msg, from) {
+  usage: "<on/off>",
+  async execute(sock, msg, from, args) {
     try {
       // Verifica se é grupo
       if (!from.endsWith('@g.us')) {
@@ -26,29 +27,49 @@ module.exports = {
         return;
       }
 
-      // Atualiza as configurações do grupo
-      await sock.groupSettingUpdate(
-        from,
-        'announcement' // Modo 'announcement' = apenas admins podem enviar mensagens
-      );
+      // Obtém ação (on/off)
+      const action = args[0]?.toLowerCase();
+      const groupMetadata = await sock.groupMetadata(from);
+      const members = groupMetadata.participants.map(p => p.id);
 
-      // Confirmação
-      await sock.sendMessage(from, {
-        text: "🔒 Grupo restrito! Agora apenas administradores podem enviar mensagens.",
-        mentions: members
-      });
+      if (action === 'on') {
+        // Ativa modo apenas admins
+        await sock.groupSettingUpdate(from, 'announcement');
+        
+        await sock.sendMessage(from, {
+          text: "🔒 *MODO APENAS ADMS ATIVADO!*\nAgora só administradores podem enviar mensagens.",
+          mentions: members
+        });
+        
+      } else if (action === 'off') {
+        // Desativa modo apenas admins
+        await sock.groupSettingUpdate(from, 'not_announcement');
+        
+        await sock.sendMessage(from, {
+          text: "🔓 *MODO APENAS ADMS DESATIVADO!*\nTodos os membros podem enviar mensagens novamente.",
+          mentions: members
+        });
+        
+      } else {
+        // Mostra ajuda se não especificar on/off
+        await sock.sendMessage(from, {
+          text: `❌ Uso incorreto!\nExemplos:\n• *${config.bot.prefix}onlyadms on* - Ativa modo apenas admins\n• *${config.bot.prefix}onlyadms off* - Desativa modo apenas admins`
+        });
+        return;
+      }
 
+      // Confirmação visual
       await sock.sendMessage(from, {
         react: {
-          text: "✅",
+          text: action === 'on' ? '🔒' : '🔓',
           key: msg.key
         }
       });
 
     } catch (error) {
-      console.error('Erro no onlyadm:', error);
+      console.error('Erro no onlyadms:', error);
       await sock.sendMessage(from, { 
-        text: "❌ Erro ao restringir o grupo!",
+        text: "❌ Erro ao alterar configurações do grupo!",
         mentions: [msg.key.participant || msg.key.remoteJid]
       });
       
